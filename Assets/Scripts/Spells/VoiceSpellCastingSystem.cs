@@ -39,6 +39,10 @@ public class VoiceSpellCastingSystem : MonoBehaviour
     private string queuedVoiceKeyword;
     private bool hasQueuedVoiceKeyword;
 
+    private bool hasLockedTarget;
+    private Vector3 lockedTargetPosition;
+    private Vector3 lockedTargetNormal;
+
     private void Awake()
     {
         RegisterTemplates();
@@ -177,6 +181,9 @@ public class VoiceSpellCastingSystem : MonoBehaviour
 
         if (keyword == ignisKeyword.ToUpperInvariant())
         {
+            if (!TryLockCurrentTarget())
+                return;
+
             pendingSpell = "IGNIS";
             awaitingGesture = true;
             awaitingUntil = Time.time + gestureTimeout;
@@ -187,7 +194,28 @@ public class VoiceSpellCastingSystem : MonoBehaviour
             Debug.Log("[VoiceSpellCastingSystem] Waiting for IGNIS triangle gesture.");
         }
     }
+    private bool TryLockCurrentTarget()
+    {
+        if (Physics.Raycast(
+            wandTip.position,
+            wandTip.forward,
+            out RaycastHit hit,
+            maxCastDistance,
+            castLayers,
+            QueryTriggerInteraction.Ignore))
+        {
+            hasLockedTarget = true;
+            lockedTargetPosition = hit.point;
+            lockedTargetNormal = hit.normal;
 
+            Debug.Log($"[VoiceSpellCastingSystem] Target locked at {hit.point} on {hit.collider.name}");
+            return true;
+        }
+
+        hasLockedTarget = false;
+        Debug.LogWarning("[VoiceSpellCastingSystem] No valid target found. Aim at the floor before saying IGNIS.");
+        return false;
+    }
     private void FinishGesture()
     {
         List<Vector2> stroke = drawingSurface.GetStrokePoints2D();
@@ -225,25 +253,18 @@ public class VoiceSpellCastingSystem : MonoBehaviour
 
     private void CastIgnis()
     {
-        if (Physics.Raycast(
-            wandTip.position,
-            wandTip.forward,
-            out RaycastHit hit,
-            maxCastDistance,
-            castLayers,
-            QueryTriggerInteraction.Ignore))
+        if (!hasLockedTarget)
         {
-            Vector3 spawnPosition = hit.point + hit.normal * castSurfaceOffset;
-            Quaternion spawnRotation = Quaternion.FromToRotation(Vector3.up, hit.normal);
-
-            Instantiate(ignisAoEPrefab, spawnPosition, spawnRotation);
-
-            Debug.Log($"[VoiceSpellCastingSystem] IGNIS cast at {hit.point} on {hit.collider.name}.");
+            Debug.LogWarning("[VoiceSpellCastingSystem] Cast failed. No locked target.");
+            return;
         }
-        else
-        {
-            Debug.LogWarning("[VoiceSpellCastingSystem] Cast failed. Wand is not pointing at a valid collider.");
-        }
+
+        Vector3 spawnPosition = lockedTargetPosition + lockedTargetNormal * castSurfaceOffset;
+        Quaternion spawnRotation = Quaternion.FromToRotation(Vector3.up, lockedTargetNormal);
+
+        Instantiate(ignisAoEPrefab, spawnPosition, spawnRotation);
+
+        Debug.Log($"[VoiceSpellCastingSystem] IGNIS cast at locked target {lockedTargetPosition}.");
     }
 
     private void CancelPendingSpell()
@@ -251,6 +272,11 @@ public class VoiceSpellCastingSystem : MonoBehaviour
         awaitingGesture = false;
         pendingSpell = null;
         previousTriggerPressed = false;
+
+        hasLockedTarget = false;
+        lockedTargetPosition = Vector3.zero;
+        lockedTargetNormal = Vector3.up;
+
         drawingSurface.HideSurface();
     }
 
