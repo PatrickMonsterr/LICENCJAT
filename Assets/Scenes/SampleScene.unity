@@ -152,15 +152,25 @@ MonoBehaviour:
   wandTip: {fileID: 1189889124}
   drawingSurface: {fileID: 1591416323}
   ignisAoEPrefab: {fileID: 3744133877081091469, guid: a2a060732547fe64581bb0cb3c2bdf1d, type: 3}
+  regenAoEPrefab: {fileID: 7986504087968017091, guid: 12a56ee4630040c4eb17ae9707ed4cef, type: 3}
+  freezeAoEPrefab: {fileID: 4932088507883938021, guid: 0e5709a7ddb77924090c112cf73bb98a, type: 3}
+  slashAoEPrefab: {fileID: 7647375919561907788, guid: 035ce8c9cfc34104991ce416daf8aebe, type: 3}
+  shieldPrefab: {fileID: 1289543790355709915, guid: b99922c2f59b1a542bdd06ae8bee47ae, type: 3}
+  portalPrefab: {fileID: 5607819269926399345, guid: 45e0f06c750176947862c10346226439, type: 3}
   castLayers:
     serializedVersion: 2
     m_Bits: 4294967295
   maxCastDistance: 25
   castSurfaceOffset: 0.02
-  acceptThreshold: 0.6
+  acceptThreshold: 0.55
   gestureTimeout: 5
   minimumPointsRequired: 12
   ignisKeyword: IGNIS
+  regenKeyword: REGEN
+  freezeKeyword: FREEZE
+  slashKeyword: SLASH
+  shieldKeyword: SHIELD
+  portalKeyword: PORTAL
   minimumConfidence: 2
 --- !u!4 &170790142
 Transform:
@@ -377,7 +387,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 22400762, guid: 67117722a812a2e46ab8cb8eafbf5f5e, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0.000030517578
+      value: -0.00011062622
       objectReference: {fileID: 0}
     - target: {fileID: 22426080, guid: 67117722a812a2e46ab8cb8eafbf5f5e, type: 3}
       propertyPath: m_AnchorMax.x
@@ -625,6 +635,14 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 224619367409363176, guid: 67117722a812a2e46ab8cb8eafbf5f5e, type: 3}
       propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 224669170713768380, guid: 67117722a812a2e46ab8cb8eafbf5f5e, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 224757625655964314, guid: 67117722a812a2e46ab8cb8eafbf5f5e, type: 3}
+      propertyPath: m_AnchoredPosition.x
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 224856348943071238, guid: 67117722a812a2e46ab8cb8eafbf5f5e, type: 3}
@@ -1160,10 +1178,11 @@ MonoBehaviour:
   lineRenderer: {fileID: 1591416324}
   distanceFromCamera: 1.7
   verticalOffset: -0.05
-  planeSize: {x: 1.4, y: 1.4}
-  minPointDistance: 0.02
+  planeSize: {x: 1, y: 1}
+  minPointDistance: 0.015
   maxPoints: 256
   lineOffset: 0.002
+  smoothing: 0.35
 --- !u!120 &1591416324
 LineRenderer:
   serializedVersion: 2
@@ -1356,7 +1375,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -0.39, y: 2.28, z: -7.95}
-  m_LocalScale: {x: 1.4, y: 1.4, z: 1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}

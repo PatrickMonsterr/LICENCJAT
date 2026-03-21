@@ -13,9 +13,10 @@ public class SpellDrawingSurface : MonoBehaviour
     [SerializeField] private Vector2 planeSize = new Vector2(0.6f, 0.6f);
 
     [Header("Stroke")]
-    [SerializeField] private float minPointDistance = 0.01f;
+    [SerializeField] private float minPointDistance = 0.015f;
     [SerializeField] private int maxPoints = 256;
     [SerializeField] private float lineOffset = 0.002f;
+    [SerializeField][Range(0f, 1f)] private float smoothing = 0.35f;
 
     private readonly List<Vector2> localStrokePoints = new List<Vector2>();
     private readonly List<Vector3> worldStrokePoints = new List<Vector3>();
@@ -115,7 +116,10 @@ public class SpellDrawingSurface : MonoBehaviour
 
         if (localStrokePoints.Count > 0)
         {
-            float dist = Vector2.Distance(localStrokePoints[localStrokePoints.Count - 1], local2D);
+            Vector2 previous = localStrokePoints[localStrokePoints.Count - 1];
+            local2D = Vector2.Lerp(local2D, previous, smoothing);
+
+            float dist = Vector2.Distance(previous, local2D);
             if (dist < minPointDistance)
                 return false;
         }

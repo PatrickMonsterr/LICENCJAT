@@ -11,8 +11,14 @@ public class VoiceSpellCastingSystem : MonoBehaviour
     [SerializeField] private Transform wandTip;
     [SerializeField] private SpellDrawingSurface drawingSurface;
 
-    [Header("Ignis Spell")]
+    [Header("Spell Prefabs")]
     [SerializeField] private GameObject ignisAoEPrefab;
+    [SerializeField] private GameObject regenAoEPrefab;
+    [SerializeField] private GameObject freezeAoEPrefab;
+    [SerializeField] private GameObject slashAoEPrefab;
+    [SerializeField] private GameObject shieldPrefab;
+    [SerializeField] private GameObject portalPrefab;
+
     [SerializeField] private LayerMask castLayers = ~0;
     [SerializeField] private float maxCastDistance = 25f;
     [SerializeField] private float castSurfaceOffset = 0.02f;
@@ -24,6 +30,11 @@ public class VoiceSpellCastingSystem : MonoBehaviour
 
     [Header("Voice")]
     [SerializeField] private string ignisKeyword = "IGNIS";
+    [SerializeField] private string regenKeyword = "REGEN";
+    [SerializeField] private string freezeKeyword = "FREEZE";
+    [SerializeField] private string slashKeyword = "SLASH";
+    [SerializeField] private string shieldKeyword = "SHIELD";
+    [SerializeField] private string portalKeyword = "PORTAL";
     [SerializeField] private ConfidenceLevel minimumConfidence = ConfidenceLevel.Medium;
 
     private KeywordRecognizer keywordRecognizer;
@@ -122,23 +133,100 @@ public class VoiceSpellCastingSystem : MonoBehaviour
 
     private void RegisterTemplates()
     {
+        // IGNIS = triangle
         recognizer.AddTemplate("IGNIS", new List<Vector2>
-        {
-            new Vector2(0.0f, 1.0f),
-            new Vector2(-0.2f, 0.5f),
-            new Vector2(-0.4f, 0.0f),
-            new Vector2(-0.6f, -0.5f),
-            new Vector2(-0.85f, -1.0f),
+    {
+        new Vector2(0.0f, 1.0f),
+        new Vector2(-0.2f, 0.5f),
+        new Vector2(-0.4f, 0.0f),
+        new Vector2(-0.6f, -0.5f),
+        new Vector2(-0.85f, -1.0f),
 
-            new Vector2(-0.3f, -1.0f),
-            new Vector2(0.3f, -1.0f),
-            new Vector2(0.85f, -1.0f),
+        new Vector2(-0.3f, -1.0f),
+        new Vector2(0.3f, -1.0f),
+        new Vector2(0.85f, -1.0f),
 
-            new Vector2(0.6f, -0.5f),
-            new Vector2(0.4f, 0.0f),
-            new Vector2(0.2f, 0.5f),
-            new Vector2(0.0f, 1.0f)
-        });
+        new Vector2(0.6f, -0.5f),
+        new Vector2(0.4f, 0.0f),
+        new Vector2(0.2f, 0.5f),
+        new Vector2(0.0f, 1.0f)
+    });
+
+        //    // REGEN = spiral
+        //    recognizer.AddTemplate("REGEN", new List<Vector2>
+        //{
+        //    new Vector2(0.0f, 1.0f),
+        //    new Vector2(0.5f, 0.9f),
+        //    new Vector2(0.9f, 0.5f),
+        //    new Vector2(1.0f, 0.0f),
+        //    new Vector2(0.8f, -0.5f),
+        //    new Vector2(0.4f, -0.8f),
+        //    new Vector2(0.0f, -0.9f),
+        //    new Vector2(-0.4f, -0.7f),
+        //    new Vector2(-0.6f, -0.3f),
+        //    new Vector2(-0.6f, 0.0f),
+        //    new Vector2(-0.4f, 0.3f),
+        //    new Vector2(-0.1f, 0.4f),
+        //    new Vector2(0.2f, 0.3f),
+        //    new Vector2(0.35f, 0.1f),
+        //    new Vector2(0.3f, -0.1f),
+        //    new Vector2(0.1f, -0.2f),
+        //    new Vector2(-0.05f, -0.15f)
+        //});
+
+        //    // FREEZE = zigzag
+        //    recognizer.AddTemplate("FREEZE", new List<Vector2>
+        //{
+        //    new Vector2(-1.0f, 0.8f),
+        //    new Vector2(-0.5f, 0.2f),
+        //    new Vector2(0.0f, 0.8f),
+        //    new Vector2(0.5f, 0.2f),
+        //    new Vector2(1.0f, 0.8f),
+        //    new Vector2(0.5f, -0.2f),
+        //    new Vector2(0.0f, -0.8f),
+        //    new Vector2(-0.5f, -0.2f),
+        //    new Vector2(-1.0f, -0.8f)
+        //});
+
+        // SLASH = single slash 
+        recognizer.AddTemplate("SLASH", new List<Vector2>
+    {
+        new Vector2(-1.0f, -1.0f),
+        new Vector2(-0.5f, -0.5f),
+        new Vector2(0.0f, 0.0f),
+        new Vector2(0.5f, 0.5f),
+        new Vector2(1.0f, 1.0f)
+    });
+
+        //    // SHIELD = arc
+        //    recognizer.AddTemplate("SHIELD", new List<Vector2>
+        //{
+        //    new Vector2(-1.0f, -0.5f),
+        //    new Vector2(-0.8f, 0.0f),
+        //    new Vector2(-0.5f, 0.4f),
+        //    new Vector2(0.0f, 0.7f),
+        //    new Vector2(0.5f, 0.4f),
+        //    new Vector2(0.8f, 0.0f),
+        //    new Vector2(1.0f, -0.5f)
+        //});
+
+        //    // PORTAL = oval
+        //    recognizer.AddTemplate("PORTAL", new List<Vector2>
+        //{
+        //    new Vector2(0.0f, 1.0f),
+        //    new Vector2(0.4f, 0.8f),
+        //    new Vector2(0.7f, 0.3f),
+        //    new Vector2(0.8f, 0.0f),
+        //    new Vector2(0.7f, -0.3f),
+        //    new Vector2(0.4f, -0.8f),
+        //    new Vector2(0.0f, -1.0f),
+        //    new Vector2(-0.4f, -0.8f),
+        //    new Vector2(-0.7f, -0.3f),
+        //    new Vector2(-0.8f, 0.0f),
+        //    new Vector2(-0.7f, 0.3f),
+        //    new Vector2(-0.4f, 0.8f),
+        //    new Vector2(0.0f, 1.0f)
+        //});
     }
 
     private void StartVoiceRecognizer()
@@ -146,7 +234,15 @@ public class VoiceSpellCastingSystem : MonoBehaviour
         try
         {
             keywordRecognizer = new KeywordRecognizer(
-                new[] { ignisKeyword },
+                new[]
+                {
+                    ignisKeyword,
+                    //regenKeyword,
+                    //freezeKeyword,
+                    slashKeyword,
+                    //shieldKeyword,
+                    //portalKeyword
+                },
                 minimumConfidence
             );
 
@@ -179,20 +275,29 @@ public class VoiceSpellCastingSystem : MonoBehaviour
 
         Debug.Log($"[VoiceSpellCastingSystem] Voice recognized: {keyword}");
 
-        if (keyword == ignisKeyword.ToUpperInvariant())
-        {
-            if (!TryLockCurrentTarget())
-                return;
+        string spellToPrepare = null;
 
-            pendingSpell = "IGNIS";
-            awaitingGesture = true;
-            awaitingUntil = Time.time + gestureTimeout;
-            previousTriggerPressed = false;
+        if (keyword == ignisKeyword.ToUpperInvariant()) spellToPrepare = "IGNIS";
+        else if (keyword == regenKeyword.ToUpperInvariant()) spellToPrepare = "REGEN";
+        else if (keyword == freezeKeyword.ToUpperInvariant()) spellToPrepare = "FREEZE";
+        else if (keyword == slashKeyword.ToUpperInvariant()) spellToPrepare = "SLASH";
+        else if (keyword == shieldKeyword.ToUpperInvariant()) spellToPrepare = "SHIELD";
+        else if (keyword == portalKeyword.ToUpperInvariant()) spellToPrepare = "PORTAL";
 
-            drawingSurface.ShowForCamera(xrCamera);
+        if (string.IsNullOrEmpty(spellToPrepare))
+            return;
 
-            Debug.Log("[VoiceSpellCastingSystem] Waiting for IGNIS triangle gesture.");
-        }
+        if (!TryLockCurrentTarget())
+            return;
+
+        pendingSpell = spellToPrepare;
+        awaitingGesture = true;
+        awaitingUntil = Time.time + gestureTimeout;
+        previousTriggerPressed = false;
+
+        drawingSurface.ShowForCamera(xrCamera);
+
+        Debug.Log($"[VoiceSpellCastingSystem] Waiting for {pendingSpell} gesture.");
     }
     private bool TryLockCurrentTarget()
     {
@@ -241,7 +346,7 @@ public class VoiceSpellCastingSystem : MonoBehaviour
         if (accepted)
         {
             Debug.Log("[VoiceSpellCastingSystem] Gesture accepted.");
-            CastIgnis();
+            CastPendingSpell();
         }
         else
         {
@@ -251,7 +356,7 @@ public class VoiceSpellCastingSystem : MonoBehaviour
         CancelPendingSpell();
     }
 
-    private void CastIgnis()
+    private void CastPendingSpell()
     {
         if (!hasLockedTarget)
         {
@@ -259,12 +364,34 @@ public class VoiceSpellCastingSystem : MonoBehaviour
             return;
         }
 
+        GameObject prefabToCast = GetPrefabForSpell(pendingSpell);
+
+        if (prefabToCast == null)
+        {
+            Debug.LogWarning($"[VoiceSpellCastingSystem] Spell '{pendingSpell}' recognized correctly, but no prefab is assigned yet.");
+            return;
+        }
+
         Vector3 spawnPosition = lockedTargetPosition + lockedTargetNormal * castSurfaceOffset;
         Quaternion spawnRotation = Quaternion.FromToRotation(Vector3.up, lockedTargetNormal);
 
-        Instantiate(ignisAoEPrefab, spawnPosition, spawnRotation);
+        Instantiate(prefabToCast, spawnPosition, spawnRotation);
 
-        Debug.Log($"[VoiceSpellCastingSystem] IGNIS cast at locked target {lockedTargetPosition}.");
+        Debug.Log($"[VoiceSpellCastingSystem] {pendingSpell} cast at locked target {lockedTargetPosition}.");
+    }
+
+    private GameObject GetPrefabForSpell(string spellName)
+    {
+        switch (spellName)
+        {
+            case "IGNIS": return ignisAoEPrefab;
+            case "REGEN": return regenAoEPrefab;
+            case "FREEZE": return freezeAoEPrefab;
+            case "SLASH": return slashAoEPrefab;
+            case "SHIELD": return shieldPrefab;
+            case "PORTAL": return portalPrefab;
+            default: return null;
+        }
     }
 
     private void CancelPendingSpell()
