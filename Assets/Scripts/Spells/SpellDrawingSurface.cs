@@ -17,6 +17,7 @@ public class SpellDrawingSurface : MonoBehaviour
     [SerializeField] private int maxPoints = 256;
     [SerializeField] private float lineOffset = 0.002f;
     [SerializeField][Range(0f, 1f)] private float smoothing = 0.35f;
+    [SerializeField][Range(0, 10)] private int visualSmoothingSubsteps = 4;
 
     private readonly List<Vector2> localStrokePoints = new List<Vector2>();
     private readonly List<Vector3> worldStrokePoints = new List<Vector3>();
@@ -156,8 +157,34 @@ public class SpellDrawingSurface : MonoBehaviour
         if (lineRenderer == null)
             return;
 
-        lineRenderer.positionCount = worldStrokePoints.Count;
-        lineRenderer.SetPositions(worldStrokePoints.ToArray());
+        if (worldStrokePoints.Count < 2)
+        {
+            lineRenderer.positionCount = worldStrokePoints.Count;
+            lineRenderer.SetPositions(worldStrokePoints.ToArray());
+            return;
+        }
+
+        List<Vector3> smoothPoints = new List<Vector3>();
+
+        for (int i = 0; i < worldStrokePoints.Count - 1; i++)
+        {
+            Vector3 a = worldStrokePoints[i];
+            Vector3 b = worldStrokePoints[i + 1];
+
+            smoothPoints.Add(a);
+
+            for (int s = 1; s <= visualSmoothingSubsteps; s++)
+            {
+                float t = s / (float)(visualSmoothingSubsteps + 1);
+                Vector3 p = Vector3.Lerp(a, b, t);
+                smoothPoints.Add(p);
+            }
+        }
+
+        smoothPoints.Add(worldStrokePoints[worldStrokePoints.Count - 1]);
+
+        lineRenderer.positionCount = smoothPoints.Count;
+        lineRenderer.SetPositions(smoothPoints.ToArray());
     }
 
     private void OnDrawGizmosSelected()

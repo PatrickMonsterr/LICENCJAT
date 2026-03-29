@@ -162,7 +162,12 @@ MonoBehaviour:
     m_Bits: 4294967295
   maxCastDistance: 25
   castSurfaceOffset: 0.02
-  acceptThreshold: 0.55
+  ignisThreshold: 0.4
+  regenThreshold: 0.33
+  freezeThreshold: 0.55
+  slashThreshold: 0.75
+  shieldThreshold: 0.55
+  portalThreshold: 0.6
   gestureTimeout: 5
   minimumPointsRequired: 12
   ignisKeyword: IGNIS
@@ -387,7 +392,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 22400762, guid: 67117722a812a2e46ab8cb8eafbf5f5e, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -0.00011062622
+      value: -0.0000038146973
       objectReference: {fileID: 0}
     - target: {fileID: 22426080, guid: 67117722a812a2e46ab8cb8eafbf5f5e, type: 3}
       propertyPath: m_AnchorMax.x
@@ -1179,10 +1184,11 @@ MonoBehaviour:
   distanceFromCamera: 1.7
   verticalOffset: -0.05
   planeSize: {x: 1, y: 1}
-  minPointDistance: 0.015
+  minPointDistance: 0.02
   maxPoints: 256
   lineOffset: 0.002
-  smoothing: 0.35
+  smoothing: 0.55
+  visualSmoothingSubsteps: 4
 --- !u!120 &1591416324
 LineRenderer:
   serializedVersion: 2

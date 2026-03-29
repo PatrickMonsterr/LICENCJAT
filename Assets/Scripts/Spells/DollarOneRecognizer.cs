@@ -272,4 +272,51 @@ public class DollarOneRecognizer
 
         return Rect.MinMaxRect(minX, minY, maxX, maxY);
     }
+    public Result RecognizeOnly(string templateName, List<Vector2> rawPoints)
+    {
+        Result result = new Result
+        {
+            Name = templateName,
+            Score = 0f,
+            Success = false
+        };
+
+        if (rawPoints == null || rawPoints.Count < 2 || templates.Count == 0)
+            return result;
+
+        List<Vector2> points = Normalize(rawPoints);
+
+        float bestDistance = float.MaxValue;
+        bool foundTemplate = false;
+
+        foreach (Template template in templates)
+        {
+            if (template.Name != templateName)
+                continue;
+
+            float distance = DistanceAtBestAngle(
+                points,
+                template.Points,
+                -AngleRange * Mathf.Deg2Rad,
+                AngleRange * Mathf.Deg2Rad,
+                AnglePrecision * Mathf.Deg2Rad
+            );
+
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                foundTemplate = true;
+            }
+        }
+
+        if (!foundTemplate)
+            return result;
+
+        float score = 1f - (bestDistance / HalfDiagonal);
+        score = Mathf.Clamp01(score);
+
+        result.Score = score;
+        result.Success = true;
+        return result;
+    }
 }

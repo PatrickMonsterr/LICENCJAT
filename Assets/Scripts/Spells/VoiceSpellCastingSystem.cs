@@ -24,7 +24,13 @@ public class VoiceSpellCastingSystem : MonoBehaviour
     [SerializeField] private float castSurfaceOffset = 0.02f;
 
     [Header("Gesture Recognition")]
-    [SerializeField] private float acceptThreshold = 0.75f;
+    [SerializeField] private float ignisThreshold = 0.50f;
+    [SerializeField] private float regenThreshold = 0.40f;
+    [SerializeField] private float freezeThreshold = 0.55f;
+    [SerializeField] private float slashThreshold = 0.75f;
+    [SerializeField] private float shieldThreshold = 0.55f;
+    [SerializeField] private float portalThreshold = 0.60f;
+
     [SerializeField] private float gestureTimeout = 5f;
     [SerializeField] private int minimumPointsRequired = 12;
 
@@ -135,60 +141,42 @@ public class VoiceSpellCastingSystem : MonoBehaviour
     {
         // IGNIS = triangle
         recognizer.AddTemplate("IGNIS", new List<Vector2>
+        {
+            new Vector2(0.0f, 1.0f),
+            new Vector2(-0.8f, -1.0f),
+            new Vector2(0.8f, -1.0f),
+            new Vector2(0.0f, 1.0f)
+        });
+
+        // REGEN = circle clockwise
+        recognizer.AddTemplate("REGEN", new List<Vector2>
     {
         new Vector2(0.0f, 1.0f),
-        new Vector2(-0.2f, 0.5f),
-        new Vector2(-0.4f, 0.0f),
-        new Vector2(-0.6f, -0.5f),
-        new Vector2(-0.85f, -1.0f),
-
-        new Vector2(-0.3f, -1.0f),
-        new Vector2(0.3f, -1.0f),
-        new Vector2(0.85f, -1.0f),
-
-        new Vector2(0.6f, -0.5f),
-        new Vector2(0.4f, 0.0f),
-        new Vector2(0.2f, 0.5f),
+        new Vector2(0.7f, 0.7f),
+        new Vector2(1.0f, 0.0f),
+        new Vector2(0.7f, -0.7f),
+        new Vector2(0.0f, -1.0f),
+        new Vector2(-0.7f, -0.7f),
+        new Vector2(-1.0f, 0.0f),
+        new Vector2(-0.7f, 0.7f),
         new Vector2(0.0f, 1.0f)
     });
 
-        //    // REGEN = spiral
-        //    recognizer.AddTemplate("REGEN", new List<Vector2>
-        //{
-        //    new Vector2(0.0f, 1.0f),
-        //    new Vector2(0.5f, 0.9f),
-        //    new Vector2(0.9f, 0.5f),
-        //    new Vector2(1.0f, 0.0f),
-        //    new Vector2(0.8f, -0.5f),
-        //    new Vector2(0.4f, -0.8f),
-        //    new Vector2(0.0f, -0.9f),
-        //    new Vector2(-0.4f, -0.7f),
-        //    new Vector2(-0.6f, -0.3f),
-        //    new Vector2(-0.6f, 0.0f),
-        //    new Vector2(-0.4f, 0.3f),
-        //    new Vector2(-0.1f, 0.4f),
-        //    new Vector2(0.2f, 0.3f),
-        //    new Vector2(0.35f, 0.1f),
-        //    new Vector2(0.3f, -0.1f),
-        //    new Vector2(0.1f, -0.2f),
-        //    new Vector2(-0.05f, -0.15f)
-        //});
+        // REGEN = circle counter-clockwise
+        recognizer.AddTemplate("REGEN", new List<Vector2>
+    {
+        new Vector2(0.0f, 1.0f),
+        new Vector2(-0.7f, 0.7f),
+        new Vector2(-1.0f, 0.0f),
+        new Vector2(-0.7f, -0.7f),
+        new Vector2(0.0f, -1.0f),
+        new Vector2(0.7f, -0.7f),
+        new Vector2(1.0f, 0.0f),
+        new Vector2(0.7f, 0.7f),
+        new Vector2(0.0f, 1.0f)
+    });
 
-        //    // FREEZE = zigzag
-        //    recognizer.AddTemplate("FREEZE", new List<Vector2>
-        //{
-        //    new Vector2(-1.0f, 0.8f),
-        //    new Vector2(-0.5f, 0.2f),
-        //    new Vector2(0.0f, 0.8f),
-        //    new Vector2(0.5f, 0.2f),
-        //    new Vector2(1.0f, 0.8f),
-        //    new Vector2(0.5f, -0.2f),
-        //    new Vector2(0.0f, -0.8f),
-        //    new Vector2(-0.5f, -0.2f),
-        //    new Vector2(-1.0f, -0.8f)
-        //});
-
-        // SLASH = single slash 
+        // SLASH = single slash /
         recognizer.AddTemplate("SLASH", new List<Vector2>
     {
         new Vector2(-1.0f, -1.0f),
@@ -198,35 +186,42 @@ public class VoiceSpellCastingSystem : MonoBehaviour
         new Vector2(1.0f, 1.0f)
     });
 
-        //    // SHIELD = arc
-        //    recognizer.AddTemplate("SHIELD", new List<Vector2>
-        //{
-        //    new Vector2(-1.0f, -0.5f),
-        //    new Vector2(-0.8f, 0.0f),
-        //    new Vector2(-0.5f, 0.4f),
-        //    new Vector2(0.0f, 0.7f),
-        //    new Vector2(0.5f, 0.4f),
-        //    new Vector2(0.8f, 0.0f),
-        //    new Vector2(1.0f, -0.5f)
-        //});
+        // SHIELD = arc
+    //    recognizer.AddTemplate("SHIELD", new List<Vector2>
+    //{
+    //    new Vector2(-1.0f, -0.5f),
+    //    new Vector2(-0.8f, 0.0f),
+    //    new Vector2(-0.5f, 0.4f),
+    //    new Vector2(0.0f, 0.7f),
+    //    new Vector2(0.5f, 0.4f),
+    //    new Vector2(0.8f, 0.0f),
+    //    new Vector2(1.0f, -0.5f)
+    //});
 
-        //    // PORTAL = oval
-        //    recognizer.AddTemplate("PORTAL", new List<Vector2>
-        //{
-        //    new Vector2(0.0f, 1.0f),
-        //    new Vector2(0.4f, 0.8f),
-        //    new Vector2(0.7f, 0.3f),
-        //    new Vector2(0.8f, 0.0f),
-        //    new Vector2(0.7f, -0.3f),
-        //    new Vector2(0.4f, -0.8f),
-        //    new Vector2(0.0f, -1.0f),
-        //    new Vector2(-0.4f, -0.8f),
-        //    new Vector2(-0.7f, -0.3f),
-        //    new Vector2(-0.8f, 0.0f),
-        //    new Vector2(-0.7f, 0.3f),
-        //    new Vector2(-0.4f, 0.8f),
-        //    new Vector2(0.0f, 1.0f)
-        //});
+        // FREEZE = zigzag
+    //    recognizer.AddTemplate("FREEZE", new List<Vector2>
+    //{
+    //    new Vector2(-1.0f, 0.8f),
+    //    new Vector2(-0.5f, 0.2f),
+    //    new Vector2(0.0f, 0.8f),
+    //    new Vector2(0.5f, 0.2f),
+    //    new Vector2(1.0f, 0.8f),
+    //    new Vector2(0.5f, -0.2f),
+    //    new Vector2(0.0f, -0.8f),
+    //    new Vector2(-0.5f, -0.2f),
+    //    new Vector2(-1.0f, -0.8f)
+    //});
+
+        // PORTAL = rectangular gate
+    //    recognizer.AddTemplate("PORTAL", new List<Vector2>
+    //{
+    //    new Vector2(-0.6f, 1.0f),
+    //    new Vector2(-0.6f, 0.0f),
+    //    new Vector2(-0.6f, -1.0f),
+    //    new Vector2(0.6f, -1.0f),
+    //    new Vector2(0.6f, 0.0f),
+    //    new Vector2(0.6f, 1.0f)
+    //});
     }
 
     private void StartVoiceRecognizer()
@@ -237,7 +232,7 @@ public class VoiceSpellCastingSystem : MonoBehaviour
                 new[]
                 {
                     ignisKeyword,
-                    //regenKeyword,
+                    regenKeyword,
                     //freezeKeyword,
                     slashKeyword,
                     //shieldKeyword,
@@ -321,6 +316,84 @@ public class VoiceSpellCastingSystem : MonoBehaviour
         Debug.LogWarning("[VoiceSpellCastingSystem] No valid target found. Aim at the floor before saying IGNIS.");
         return false;
     }
+    private float GetThresholdForSpell(string spellName)
+    {
+        switch (spellName)
+        {
+            case "IGNIS": return ignisThreshold;
+            case "REGEN": return regenThreshold;
+            case "FREEZE": return freezeThreshold;
+            case "SLASH": return slashThreshold;
+            case "SHIELD": return shieldThreshold;
+            case "PORTAL": return portalThreshold;
+            default: return 0.50f;
+        }
+    }
+    private float GetStrokePathLength(List<Vector2> points)
+    {
+        float length = 0f;
+
+        for (int i = 1; i < points.Count; i++)
+            length += Vector2.Distance(points[i - 1], points[i]);
+
+        return length;
+    }
+
+    private float GetStartEndDistance(List<Vector2> points)
+    {
+        if (points == null || points.Count < 2)
+            return 999f;
+
+        return Vector2.Distance(points[0], points[points.Count - 1]);
+    }
+
+    private bool IsClosedShape(List<Vector2> points, float maxClosingDistance = 0.45f)
+    {
+        return GetStartEndDistance(points) <= maxClosingDistance;
+    }
+
+    private float GetPathStraightnessRatio(List<Vector2> points)
+    {
+        if (points == null || points.Count < 2)
+            return 1f;
+
+        float pathLength = GetStrokePathLength(points);
+        float directDistance = Vector2.Distance(points[0], points[points.Count - 1]);
+
+        if (directDistance < 0.0001f)
+            return 999f;
+
+        return pathLength / directDistance;
+    }
+    private bool PassesSpellShapeRules(string spellName, List<Vector2> stroke)
+    {
+        if (stroke == null || stroke.Count < 2)
+            return false;
+
+        if (spellName == "IGNIS")
+        {
+            bool closedEnough = IsClosedShape(stroke, 0.45f);
+            float straightness = GetPathStraightnessRatio(stroke);
+
+            Debug.Log($"[VoiceSpellCastingSystem] IGNIS shape check | Closed: {closedEnough} | Straightness: {straightness:0.000}");
+
+            // Triangle should be closed and clearly not just a straight line
+            return closedEnough && straightness > 2.0f;
+        }
+
+        if (spellName == "SLASH")
+        {
+            bool closedEnough = IsClosedShape(stroke, 0.45f);
+            float straightness = GetPathStraightnessRatio(stroke);
+
+            Debug.Log($"[VoiceSpellCastingSystem] SLASH shape check | Closed: {closedEnough} | Straightness: {straightness:0.000}");
+
+            // Slash should stay open and fairly line-like
+            return !closedEnough && straightness < 1.2f;
+        }
+
+        return true;
+    }
     private void FinishGesture()
     {
         List<Vector2> stroke = drawingSurface.GetStrokePoints2D();
@@ -334,14 +407,17 @@ public class VoiceSpellCastingSystem : MonoBehaviour
             return;
         }
 
-        DollarOneRecognizer.Result result = recognizer.Recognize(stroke);
+        DollarOneRecognizer.Result result = recognizer.RecognizeOnly(pendingSpell, stroke);
 
-        Debug.Log($"[VoiceSpellCastingSystem] Recognizer result: {result.Name} | Score: {result.Score:0.000}");
+        float requiredThreshold = GetThresholdForSpell(pendingSpell);
+        bool passesShapeRules = PassesSpellShapeRules(pendingSpell, stroke);
+
+        Debug.Log($"[VoiceSpellCastingSystem] Expected: {pendingSpell} | Score: {result.Score:0.000} | Threshold: {requiredThreshold:0.000} | ShapeRules: {passesShapeRules}");
 
         bool accepted =
             result.Success &&
-            result.Name == pendingSpell &&
-            result.Score >= acceptThreshold;
+            result.Score >= requiredThreshold &&
+            passesShapeRules;
 
         if (accepted)
         {
