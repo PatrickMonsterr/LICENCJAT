@@ -209,16 +209,22 @@ public class VoiceSpellCastingSystem : MonoBehaviour
             new Vector2(1.0f, 0.15f)
         });
 
-        // PORTAL = rectangular gate
-        //    recognizer.AddTemplate("PORTAL", new List<Vector2>
-        //{
-        //    new Vector2(-0.6f, 1.0f),
-        //    new Vector2(-0.6f, 0.0f),
-        //    new Vector2(-0.6f, -1.0f),
-        //    new Vector2(0.6f, -1.0f),
-        //    new Vector2(0.6f, 0.0f),
-        //    new Vector2(0.6f, 1.0f)
-        //});
+        // PORTAL = left square bracket [
+        recognizer.AddTemplate("PORTAL", new List<Vector2>
+        {
+            new Vector2(0.8f, 1.0f),
+            new Vector2(0.2f, 1.0f),
+            new Vector2(-0.4f, 1.0f),
+            new Vector2(-0.8f, 1.0f),
+
+            new Vector2(-0.8f, 0.4f),
+            new Vector2(-0.8f, -0.2f),
+            new Vector2(-0.8f, -0.8f),
+
+            new Vector2(-0.4f, -0.8f),
+            new Vector2(0.2f, -0.8f),
+            new Vector2(0.8f, -0.8f)
+        });
     }
 
     private void StartVoiceRecognizer()
@@ -233,7 +239,7 @@ public class VoiceSpellCastingSystem : MonoBehaviour
                     freezeKeyword,
                     slashKeyword,
                     shieldKeyword,
-                    //portalKeyword
+                    portalKeyword
                 },
                 minimumConfidence
             );
@@ -362,6 +368,30 @@ public class VoiceSpellCastingSystem : MonoBehaviour
 
         return pathLength / directDistance;
     }
+    private void GetStrokeBounds(List<Vector2> points, out float width, out float height)
+    {
+        width = 0f;
+        height = 0f;
+
+        if (points == null || points.Count == 0)
+            return;
+
+        float minX = float.MaxValue;
+        float maxX = float.MinValue;
+        float minY = float.MaxValue;
+        float maxY = float.MinValue;
+
+        foreach (Vector2 p in points)
+        {
+            if (p.x < minX) minX = p.x;
+            if (p.x > maxX) maxX = p.x;
+            if (p.y < minY) minY = p.y;
+            if (p.y > maxY) maxY = p.y;
+        }
+
+        width = maxX - minX;
+        height = maxY - minY;
+    }
     private bool PassesSpellShapeRules(string spellName, List<Vector2> stroke)
     {
         if (stroke == null || stroke.Count < 2)
@@ -370,10 +400,7 @@ public class VoiceSpellCastingSystem : MonoBehaviour
         bool closedEnough = IsClosedShape(stroke, 0.45f);
         float straightness = GetPathStraightnessRatio(stroke);
 
-        Vector2 start = stroke[0];
-        Vector2 end = stroke[stroke.Count - 1];
-        float width = Mathf.Abs(end.x - start.x);
-        float height = Mathf.Abs(end.y - start.y);
+        GetStrokeBounds(stroke, out float width, out float height);
 
         if (spellName == "IGNIS")
         {
@@ -413,6 +440,17 @@ public class VoiceSpellCastingSystem : MonoBehaviour
             bool openShape = !closedEnough;
 
             return openShape && wideEnough && tallEnough && notLineLike;
+        }
+        if (spellName == "PORTAL")
+        {
+            Debug.Log($"[VoiceSpellCastingSystem] PORTAL shape check | Closed: {closedEnough} | Straightness: {straightness:0.000} | Width: {width:0.000} | Height: {height:0.000}");
+
+            bool openShape = !closedEnough;
+            bool tallEnough = height > 0.6f;
+            bool wideEnough = width > 0.25f;
+            bool notLineLike = straightness > 1.4f;
+
+            return openShape && tallEnough && wideEnough && notLineLike;
         }
 
         return true;
