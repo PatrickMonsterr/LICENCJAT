@@ -199,18 +199,15 @@ public class VoiceSpellCastingSystem : MonoBehaviour
     });
 
         // FREEZE = zigzag
-        //    recognizer.AddTemplate("FREEZE", new List<Vector2>
-        //{
-        //    new Vector2(-1.0f, 0.8f),
-        //    new Vector2(-0.5f, 0.2f),
-        //    new Vector2(0.0f, 0.8f),
-        //    new Vector2(0.5f, 0.2f),
-        //    new Vector2(1.0f, 0.8f),
-        //    new Vector2(0.5f, -0.2f),
-        //    new Vector2(0.0f, -0.8f),
-        //    new Vector2(-0.5f, -0.2f),
-        //    new Vector2(-1.0f, -0.8f)
-        //});
+        recognizer.AddTemplate("FREEZE", new List<Vector2>
+        {
+            new Vector2(-1.0f, 0.8f),
+            new Vector2(-0.55f, 0.0f),
+            new Vector2(-0.1f, 0.75f),
+            new Vector2(0.35f, -0.1f),
+            new Vector2(0.75f, 0.65f),
+            new Vector2(1.0f, 0.15f)
+        });
 
         // PORTAL = rectangular gate
         //    recognizer.AddTemplate("PORTAL", new List<Vector2>
@@ -233,7 +230,7 @@ public class VoiceSpellCastingSystem : MonoBehaviour
                 {
                     ignisKeyword,
                     regenKeyword,
-                    //freezeKeyword,
+                    freezeKeyword,
                     slashKeyword,
                     shieldKeyword,
                     //portalKeyword
@@ -403,6 +400,19 @@ public class VoiceSpellCastingSystem : MonoBehaviour
             bool curvedEnough = straightness > 1.2f;
 
             return !closedEnough && curvedEnough && wideEnough && notTooTall;
+        }
+
+        if (spellName == "FREEZE")
+        {
+            Debug.Log($"[VoiceSpellCastingSystem] FREEZE shape check | Closed: {closedEnough} | Straightness: {straightness:0.000} | Width: {width:0.000} | Height: {height:0.000}");
+
+            // Freeze should be open, angular, not too straight, and wider than tiny scribbles
+            bool wideEnough = width > 0.45f;
+            bool tallEnough = height > 0.35f;
+            bool notLineLike = straightness > 1.25f;
+            bool openShape = !closedEnough;
+
+            return openShape && wideEnough && tallEnough && notLineLike;
         }
 
         return true;
