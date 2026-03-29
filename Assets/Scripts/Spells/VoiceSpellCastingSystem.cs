@@ -187,41 +187,41 @@ public class VoiceSpellCastingSystem : MonoBehaviour
     });
 
         // SHIELD = arc
-    //    recognizer.AddTemplate("SHIELD", new List<Vector2>
-    //{
-    //    new Vector2(-1.0f, -0.5f),
-    //    new Vector2(-0.8f, 0.0f),
-    //    new Vector2(-0.5f, 0.4f),
-    //    new Vector2(0.0f, 0.7f),
-    //    new Vector2(0.5f, 0.4f),
-    //    new Vector2(0.8f, 0.0f),
-    //    new Vector2(1.0f, -0.5f)
-    //});
+        recognizer.AddTemplate("SHIELD", new List<Vector2>
+    {
+        new Vector2(-1.0f, -0.5f),
+        new Vector2(-0.8f, 0.0f),
+        new Vector2(-0.5f, 0.4f),
+        new Vector2(0.0f, 0.7f),
+        new Vector2(0.5f, 0.4f),
+        new Vector2(0.8f, 0.0f),
+        new Vector2(1.0f, -0.5f)
+    });
 
         // FREEZE = zigzag
-    //    recognizer.AddTemplate("FREEZE", new List<Vector2>
-    //{
-    //    new Vector2(-1.0f, 0.8f),
-    //    new Vector2(-0.5f, 0.2f),
-    //    new Vector2(0.0f, 0.8f),
-    //    new Vector2(0.5f, 0.2f),
-    //    new Vector2(1.0f, 0.8f),
-    //    new Vector2(0.5f, -0.2f),
-    //    new Vector2(0.0f, -0.8f),
-    //    new Vector2(-0.5f, -0.2f),
-    //    new Vector2(-1.0f, -0.8f)
-    //});
+        //    recognizer.AddTemplate("FREEZE", new List<Vector2>
+        //{
+        //    new Vector2(-1.0f, 0.8f),
+        //    new Vector2(-0.5f, 0.2f),
+        //    new Vector2(0.0f, 0.8f),
+        //    new Vector2(0.5f, 0.2f),
+        //    new Vector2(1.0f, 0.8f),
+        //    new Vector2(0.5f, -0.2f),
+        //    new Vector2(0.0f, -0.8f),
+        //    new Vector2(-0.5f, -0.2f),
+        //    new Vector2(-1.0f, -0.8f)
+        //});
 
         // PORTAL = rectangular gate
-    //    recognizer.AddTemplate("PORTAL", new List<Vector2>
-    //{
-    //    new Vector2(-0.6f, 1.0f),
-    //    new Vector2(-0.6f, 0.0f),
-    //    new Vector2(-0.6f, -1.0f),
-    //    new Vector2(0.6f, -1.0f),
-    //    new Vector2(0.6f, 0.0f),
-    //    new Vector2(0.6f, 1.0f)
-    //});
+        //    recognizer.AddTemplate("PORTAL", new List<Vector2>
+        //{
+        //    new Vector2(-0.6f, 1.0f),
+        //    new Vector2(-0.6f, 0.0f),
+        //    new Vector2(-0.6f, -1.0f),
+        //    new Vector2(0.6f, -1.0f),
+        //    new Vector2(0.6f, 0.0f),
+        //    new Vector2(0.6f, 1.0f)
+        //});
     }
 
     private void StartVoiceRecognizer()
@@ -235,7 +235,7 @@ public class VoiceSpellCastingSystem : MonoBehaviour
                     regenKeyword,
                     //freezeKeyword,
                     slashKeyword,
-                    //shieldKeyword,
+                    shieldKeyword,
                     //portalKeyword
                 },
                 minimumConfidence
@@ -370,26 +370,39 @@ public class VoiceSpellCastingSystem : MonoBehaviour
         if (stroke == null || stroke.Count < 2)
             return false;
 
+        bool closedEnough = IsClosedShape(stroke, 0.45f);
+        float straightness = GetPathStraightnessRatio(stroke);
+
+        Vector2 start = stroke[0];
+        Vector2 end = stroke[stroke.Count - 1];
+        float width = Mathf.Abs(end.x - start.x);
+        float height = Mathf.Abs(end.y - start.y);
+
         if (spellName == "IGNIS")
         {
-            bool closedEnough = IsClosedShape(stroke, 0.45f);
-            float straightness = GetPathStraightnessRatio(stroke);
-
             Debug.Log($"[VoiceSpellCastingSystem] IGNIS shape check | Closed: {closedEnough} | Straightness: {straightness:0.000}");
-
-            // Triangle should be closed and clearly not just a straight line
             return closedEnough && straightness > 2.0f;
         }
 
         if (spellName == "SLASH")
         {
-            bool closedEnough = IsClosedShape(stroke, 0.45f);
-            float straightness = GetPathStraightnessRatio(stroke);
+            Debug.Log($"[VoiceSpellCastingSystem] SLASH shape check | Closed: {closedEnough} | Straightness: {straightness:0.000} | Width: {width:0.000} | Height: {height:0.000}");
 
-            Debug.Log($"[VoiceSpellCastingSystem] SLASH shape check | Closed: {closedEnough} | Straightness: {straightness:0.000}");
+            // Slash should be open, almost straight, and diagonal enough
+            bool diagonalEnough = width > 0.35f && height > 0.35f;
+            return !closedEnough && straightness < 1.15f && diagonalEnough;
+        }
 
-            // Slash should stay open and fairly line-like
-            return !closedEnough && straightness < 1.2f;
+        if (spellName == "SHIELD")
+        {
+            Debug.Log($"[VoiceSpellCastingSystem] SHIELD shape check | Closed: {closedEnough} | Straightness: {straightness:0.000} | Width: {width:0.000} | Height: {height:0.000}");
+
+            // Shield should be open, curved, and wider than tall
+            bool wideEnough = width > 0.5f;
+            bool notTooTall = height < width;
+            bool curvedEnough = straightness > 1.2f;
+
+            return !closedEnough && curvedEnough && wideEnough && notTooTall;
         }
 
         return true;
