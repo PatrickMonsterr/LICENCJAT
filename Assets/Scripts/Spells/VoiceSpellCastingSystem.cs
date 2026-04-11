@@ -10,6 +10,7 @@ public class VoiceSpellCastingSystem : MonoBehaviour
     [SerializeField] private Camera xrCamera;
     [SerializeField] private Transform wandTip;
     [SerializeField] private SpellDrawingSurface drawingSurface;
+    [SerializeField] private Transform playerShieldAnchor;
 
     [Header("Spell Prefabs")]
     [SerializeField] private GameObject ignisAoEPrefab;
@@ -139,7 +140,7 @@ public class VoiceSpellCastingSystem : MonoBehaviour
 
     private void RegisterTemplates()
     {
-        // IGNIS = triangle
+
         recognizer.AddTemplate("IGNIS", new List<Vector2>
         {
             new Vector2(0.0f, 1.0f),
@@ -148,7 +149,7 @@ public class VoiceSpellCastingSystem : MonoBehaviour
             new Vector2(0.0f, 1.0f)
         });
 
-        // REGEN = circle clockwise
+
         recognizer.AddTemplate("REGEN", new List<Vector2>
     {
         new Vector2(0.0f, 1.0f),
@@ -162,21 +163,23 @@ public class VoiceSpellCastingSystem : MonoBehaviour
         new Vector2(0.0f, 1.0f)
     });
 
-        // REGEN = circle counter-clockwise
-        recognizer.AddTemplate("REGEN", new List<Vector2>
-    {
-        new Vector2(0.0f, 1.0f),
-        new Vector2(-0.7f, 0.7f),
-        new Vector2(-1.0f, 0.0f),
-        new Vector2(-0.7f, -0.7f),
-        new Vector2(0.0f, -1.0f),
-        new Vector2(0.7f, -0.7f),
-        new Vector2(1.0f, 0.0f),
-        new Vector2(0.7f, 0.7f),
-        new Vector2(0.0f, 1.0f)
-    });
 
-        // SLASH = single slash /
+        recognizer.AddTemplate("REGEN", new List<Vector2>
+        {
+            new Vector2(-0.9f, 1.0f),
+            new Vector2(-0.9f, 0.5f),
+            new Vector2(-0.8f, 0.0f),
+            new Vector2(-0.6f, -0.6f),
+            new Vector2(-0.25f, -0.95f),
+            new Vector2(0.0f, -1.0f),
+            new Vector2(0.25f, -0.95f),
+            new Vector2(0.6f, -0.6f),
+            new Vector2(0.8f, 0.0f),
+            new Vector2(0.9f, 0.5f),
+            new Vector2(0.9f, 1.0f)
+        }); 
+
+
         recognizer.AddTemplate("SLASH", new List<Vector2>
     {
         new Vector2(-1.0f, -1.0f),
@@ -186,7 +189,7 @@ public class VoiceSpellCastingSystem : MonoBehaviour
         new Vector2(1.0f, 1.0f)
     });
 
-        // SHIELD = arc
+
         recognizer.AddTemplate("SHIELD", new List<Vector2>
     {
         new Vector2(-1.0f, -0.5f),
@@ -198,7 +201,7 @@ public class VoiceSpellCastingSystem : MonoBehaviour
         new Vector2(1.0f, -0.5f)
     });
 
-        // FREEZE = zigzag
+
         recognizer.AddTemplate("FREEZE", new List<Vector2>
         {
             new Vector2(-1.0f, 0.8f),
@@ -209,7 +212,7 @@ public class VoiceSpellCastingSystem : MonoBehaviour
             new Vector2(1.0f, 0.15f)
         });
 
-        // PORTAL = left square bracket [
+
         recognizer.AddTemplate("PORTAL", new List<Vector2>
         {
             new Vector2(0.8f, 1.0f),
@@ -285,8 +288,11 @@ public class VoiceSpellCastingSystem : MonoBehaviour
         if (string.IsNullOrEmpty(spellToPrepare))
             return;
 
-        if (!TryLockCurrentTarget())
-            return;
+        if (spellToPrepare != "SHIELD")
+        {
+            if (!TryLockCurrentTarget())
+                return;
+        }
 
         pendingSpell = spellToPrepare;
         awaitingGesture = true;
@@ -392,6 +398,38 @@ public class VoiceSpellCastingSystem : MonoBehaviour
         width = maxX - minX;
         height = maxY - minY;
     }
+    private float GetMaxTurnAngleDegrees(List<Vector2> points)
+    {
+        if (points == null || points.Count < 3)
+            return 180f;
+
+        float maxAngle = 0f;
+
+        for (int i = 1; i < points.Count - 1; i++)
+        {
+            Vector2 a = (points[i] - points[i - 1]).normalized;
+            Vector2 b = (points[i + 1] - points[i]).normalized;
+
+            if (a.sqrMagnitude < 0.0001f || b.sqrMagnitude < 0.0001f)
+                continue;
+
+            float dot = Mathf.Clamp(Vector2.Dot(a, b), -1f, 1f);
+            float angle = Mathf.Acos(dot) * Mathf.Rad2Deg;
+
+            if (angle > maxAngle)
+                maxAngle = angle;
+        }
+
+        return maxAngle;
+    }
+    private float GetMiddlePointY(List<Vector2> points)
+    {
+        if (points == null || points.Count == 0)
+            return 0f;
+
+        int middleIndex = points.Count / 2;
+        return points[middleIndex].y;
+    }
     private bool PassesSpellShapeRules(string spellName, List<Vector2> stroke)
     {
         if (stroke == null || stroke.Count < 2)
@@ -419,14 +457,20 @@ public class VoiceSpellCastingSystem : MonoBehaviour
 
         if (spellName == "SHIELD")
         {
-            Debug.Log($"[VoiceSpellCastingSystem] SHIELD shape check | Closed: {closedEnough} | Straightness: {straightness:0.000} | Width: {width:0.000} | Height: {height:0.000}");
+            float middleY = GetMiddlePointY(stroke);
+            float averageEndY = (stroke[0].y + stroke[stroke.Count - 1].y) * 0.5f;
 
-            // Shield should be open, curved, and wider than tall
+            Debug.Log($"[VoiceSpellCastingSystem] SHIELD shape check | Closed: {closedEnough} | Straightness: {straightness:0.000} | Width: {width:0.000} | Height: {height:0.000} | MiddleY: {middleY:0.000} | EndAvgY: {averageEndY:0.000}");
+
             bool wideEnough = width > 0.5f;
             bool notTooTall = height < width;
             bool curvedEnough = straightness > 1.2f;
+            bool openShape = !closedEnough;
 
-            return !closedEnough && curvedEnough && wideEnough && notTooTall;
+            // Arc shape: middle should be higher than ends
+            bool middleIsHigher = middleY > averageEndY + 0.15f;
+
+            return openShape && curvedEnough && wideEnough && notTooTall && middleIsHigher;
         }
 
         if (spellName == "FREEZE")
@@ -453,6 +497,23 @@ public class VoiceSpellCastingSystem : MonoBehaviour
             return openShape && tallEnough && wideEnough && notLineLike;
         }
 
+        if (spellName == "REGEN")
+        {
+            float middleY = GetMiddlePointY(stroke);
+            float averageEndY = (stroke[0].y + stroke[stroke.Count - 1].y) * 0.5f;
+
+            Debug.Log($"[VoiceSpellCastingSystem] REGEN shape check | Closed: {closedEnough} | Straightness: {straightness:0.000} | Width: {width:0.000} | Height: {height:0.000} | MiddleY: {middleY:0.000} | EndAvgY: {averageEndY:0.000}");
+
+            bool openShape = !closedEnough;
+            bool tallEnough = height > 0.5f;
+            bool wideEnough = width > 0.35f;
+            bool curvedEnough = straightness > 1.15f;
+
+            // U shape: middle should be lower than ends
+            bool middleIsLower = middleY < averageEndY - 0.15f;
+
+            return openShape && tallEnough && wideEnough && curvedEnough && middleIsLower;
+        }
         return true;
     }
     private void FinishGesture()
@@ -495,17 +556,23 @@ public class VoiceSpellCastingSystem : MonoBehaviour
 
     private void CastPendingSpell()
     {
-        if (!hasLockedTarget)
-        {
-            Debug.LogWarning("[VoiceSpellCastingSystem] Cast failed. No locked target.");
-            return;
-        }
-
         GameObject prefabToCast = GetPrefabForSpell(pendingSpell);
 
         if (prefabToCast == null)
         {
             Debug.LogWarning($"[VoiceSpellCastingSystem] Spell '{pendingSpell}' recognized correctly, but no prefab is assigned yet.");
+            return;
+        }
+
+        if (pendingSpell == "SHIELD")
+        {
+            CastShield(prefabToCast);
+            return;
+        }
+
+        if (!hasLockedTarget)
+        {
+            Debug.LogWarning("[VoiceSpellCastingSystem] Cast failed. No locked target.");
             return;
         }
 
@@ -516,6 +583,26 @@ public class VoiceSpellCastingSystem : MonoBehaviour
 
         Debug.Log($"[VoiceSpellCastingSystem] {pendingSpell} cast at locked target {lockedTargetPosition}.");
     }
+    private void CastShield(GameObject shieldPrefab)
+{
+    if (playerShieldAnchor == null)
+    {
+        Debug.LogWarning("[VoiceSpellCastingSystem] Shield cast failed. Player Shield Anchor is not assigned.");
+        return;
+    }
+
+    GameObject shieldInstance = Instantiate(
+        shieldPrefab,
+        playerShieldAnchor.position,
+        playerShieldAnchor.rotation,
+        playerShieldAnchor
+    );
+
+    shieldInstance.transform.localPosition = Vector3.zero;
+    shieldInstance.transform.localRotation = Quaternion.identity;
+
+    Debug.Log("[VoiceSpellCastingSystem] SHIELD cast on player.");
+}
 
     private GameObject GetPrefabForSpell(string spellName)
     {
