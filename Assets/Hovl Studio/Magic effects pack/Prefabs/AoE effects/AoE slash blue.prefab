@@ -14743,6 +14743,7 @@ GameObject:
   - component: {fileID: 5473588508934549075}
   - component: {fileID: 2046975923011720164}
   - component: {fileID: 4625187867096033112}
+  - component: {fileID: 8598223503525472981}
   m_Layer: 0
   m_Name: AoE slash blue
   m_TagString: Untagged
@@ -19640,7 +19641,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d91e0fe0c6d414e439aa5542b3d5518a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  lifetime: 3
+  lifetime: 2
+--- !u!114 &8598223503525472981
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7647375919561907788}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d071bbbfd797f1b47bb41715b1f481c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  damagePerTick: 2
+  tickInterval: 0.1
+  radius: 3
+  duration: 1
+  targetLayers:
+    serializedVersion: 2
+    m_Bits: 64
+  spellHitColor: {r: 0.998996, g: 1, b: 0, a: 1}
 --- !u!1 &8759792057648169449
 GameObject:
   m_ObjectHideFlags: 0

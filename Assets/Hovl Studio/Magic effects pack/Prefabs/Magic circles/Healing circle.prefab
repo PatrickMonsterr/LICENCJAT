@@ -19747,6 +19747,8 @@ GameObject:
   - component: {fileID: 6211125795773073634}
   - component: {fileID: 959509697232157438}
   - component: {fileID: 2108168766999825534}
+  - component: {fileID: 4551515540685093285}
+  - component: {fileID: 595855950138247390}
   m_Layer: 0
   m_Name: Healing circle
   m_TagString: Untagged
@@ -24644,3 +24646,43 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   lifetime: 3
+--- !u!114 &4551515540685093285
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7986504087968017091}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d071bbbfd797f1b47bb41715b1f481c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  damagePerTick: 0
+  tickInterval: 0.5
+  radius: 2
+  duration: 3
+  targetLayers:
+    serializedVersion: 2
+    m_Bits: 64
+  spellHitColor: {r: 0.09919691, g: 1, b: 0, a: 1}
+--- !u!114 &595855950138247390
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7986504087968017091}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cf42290b19e6be34abf480a26025f504, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  healPerTick: 10
+  tickInterval: 0.5
+  radius: 2
+  duration: 3
+  targetLayers:
+    serializedVersion: 2
+    m_Bits: 64
+  healColor: {r: 0, g: 1, b: 0, a: 1}

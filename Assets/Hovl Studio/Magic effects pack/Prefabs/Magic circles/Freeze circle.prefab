@@ -14703,6 +14703,7 @@ GameObject:
   - component: {fileID: 8977316153704399556}
   - component: {fileID: 2879862325604266200}
   - component: {fileID: 424398139844450185}
+  - component: {fileID: 9192736198709073999}
   m_Layer: 0
   m_Name: Freeze circle
   m_TagString: Untagged
@@ -19600,6 +19601,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   lifetime: 3
+--- !u!114 &9192736198709073999
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4932088507883938021}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d071bbbfd797f1b47bb41715b1f481c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  damagePerTick: 5
+  tickInterval: 0.5
+  radius: 2.12
+  duration: 3
+  targetLayers:
+    serializedVersion: 2
+    m_Bits: 64
+  spellHitColor: {r: 0, g: 1, b: 0.9806142, a: 1}
 --- !u!1 &5052240120113588665
 GameObject:
   m_ObjectHideFlags: 0

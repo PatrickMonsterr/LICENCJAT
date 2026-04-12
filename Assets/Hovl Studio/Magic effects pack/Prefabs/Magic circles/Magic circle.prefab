@@ -5065,7 +5065,7 @@ ParticleSystem:
       serializedVersion: 2
       minMaxState: 0
       minColor: {r: 1, g: 1, b: 1, a: 1}
-      maxColor: {r: 0.36320752, g: 0.45152184, b: 1, a: 1}
+      maxColor: {r: 0.99215686, g: 0.3254902, b: 0, a: 1}
       maxGradient:
         serializedVersion: 2
         key0: {r: 1, g: 1, b: 1, a: 1}
@@ -9965,7 +9965,7 @@ ParticleSystem:
       serializedVersion: 2
       minMaxState: 0
       minColor: {r: 1, g: 1, b: 1, a: 1}
-      maxColor: {r: 0.36320752, g: 0.45152184, b: 1, a: 1}
+      maxColor: {r: 0.99215686, g: 0.3254902, b: 0, a: 1}
       maxGradient:
         serializedVersion: 2
         key0: {r: 1, g: 1, b: 1, a: 1}
@@ -14809,7 +14809,7 @@ ParticleSystem:
       serializedVersion: 2
       minMaxState: 0
       minColor: {r: 1, g: 1, b: 1, a: 1}
-      maxColor: {r: 0, g: 0.05725074, b: 1, a: 1}
+      maxColor: {r: 0.99215686, g: 0.3254902, b: 0, a: 1}
       maxGradient:
         serializedVersion: 2
         key0: {r: 1, g: 1, b: 1, a: 1}
@@ -19640,6 +19640,7 @@ GameObject:
   - component: {fileID: 797784518864179116}
   - component: {fileID: 5796355061092580784}
   - component: {fileID: 1653735938619948748}
+  - component: {fileID: 8128404138493613108}
   m_Layer: 0
   m_Name: Magic circle
   m_TagString: Untagged
@@ -19857,7 +19858,7 @@ ParticleSystem:
       serializedVersion: 2
       minMaxState: 0
       minColor: {r: 1, g: 1, b: 1, a: 1}
-      maxColor: {r: 0.33490568, g: 0.4935276, b: 1, a: 1}
+      maxColor: {r: 0.990566, g: 0.32414958, b: 0, a: 1}
       maxGradient:
         serializedVersion: 2
         key0: {r: 1, g: 1, b: 1, a: 1}
@@ -24538,6 +24539,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   lifetime: 3
+--- !u!114 &8128404138493613108
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3744133877081091469}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d071bbbfd797f1b47bb41715b1f481c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  healthDeltaPerTick: 50
+  tickInterval: 0.5
+  radius: 4.7
+  duration: 3
+  targetLayers:
+    serializedVersion: 2
+    m_Bits: 64
+  spellHitColor: {r: 1, g: 0, b: 0, a: 1}
 --- !u!1 &7673830656541891808
 GameObject:
   m_ObjectHideFlags: 0
@@ -24761,7 +24782,7 @@ ParticleSystem:
       serializedVersion: 2
       minMaxState: 0
       minColor: {r: 1, g: 1, b: 1, a: 1}
-      maxColor: {r: 0.33490568, g: 0.4935276, b: 1, a: 1}
+      maxColor: {r: 0.99215686, g: 0.3254902, b: 0, a: 1}
       maxGradient:
         serializedVersion: 2
         key0: {r: 1, g: 1, b: 1, a: 1}
