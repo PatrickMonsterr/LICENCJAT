@@ -1,0 +1,658 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Windows.Speech;
+using UnityEngine.XR;
+
+public class VoiceSpellCastingSystem : MonoBehaviour
+{
+    [Header("Scene References")]
+    [SerializeField] private Camera xrCamera;
+    [SerializeField] private Transform wandTip;
+    [SerializeField] private SpellDrawingSurface drawingSurface;
+    [SerializeField] private Transform playerShieldAnchor;
+
+    [Header("Spell Prefabs")]
+    [SerializeField] private GameObject ignisAoEPrefab;
+    [SerializeField] private GameObject regenAoEPrefab;
+    [SerializeField] private GameObject freezeAoEPrefab;
+    [SerializeField] private GameObject slashAoEPrefab;
+    [SerializeField] private GameObject shieldPrefab;
+    [SerializeField] private GameObject portalPrefab;
+
+    [SerializeField] private LayerMask castLayers = ~0;
+    [SerializeField] private float maxCastDistance = 25f;
+    [SerializeField] private float castSurfaceOffset = 0.02f;
+
+    [Header("Gesture Recognition")]
+    [SerializeField] private float ignisThreshold = 0.50f;
+    [SerializeField] private float regenThreshold = 0.40f;
+    [SerializeField] private float freezeThreshold = 0.55f;
+    [SerializeField] private float slashThreshold = 0.75f;
+    [SerializeField] private float shieldThreshold = 0.55f;
+    [SerializeField] private float portalThreshold = 0.60f;
+
+    [SerializeField] private float gestureTimeout = 5f;
+    [SerializeField] private int minimumPointsRequired = 12;
+
+    [Header("Voice")]
+    [SerializeField] private string ignisKeyword = "IGNIS";
+    [SerializeField] private string regenKeyword = "REGEN";
+    [SerializeField] private string freezeKeyword = "FREEZE";
+    [SerializeField] private string slashKeyword = "SLASH";
+    [SerializeField] private string shieldKeyword = "SHIELD";
+    [SerializeField] private string portalKeyword = "PORTAL";
+    [SerializeField] private ConfidenceLevel minimumConfidence = ConfidenceLevel.Medium;
+
+    private KeywordRecognizer keywordRecognizer;
+    private readonly DollarOneRecognizer recognizer = new DollarOneRecognizer();
+
+    private InputDevice rightHandDevice;
+    private bool previousTriggerPressed;
+
+    private bool awaitingGesture;
+    private string pendingSpell;
+    private float awaitingUntil;
+
+    private string queuedVoiceKeyword;
+    private bool hasQueuedVoiceKeyword;
+
+    private bool hasLockedTarget;
+    private Vector3 lockedTargetPosition;
+    private Vector3 lockedTargetNormal;
+
+    private void Awake()
+    {
+        RegisterTemplates();
+    }
+
+    private void Start()
+    {
+        if (xrCamera == null)
+        {
+            Debug.LogError("[VoiceSpellCastingSystem] XR Camera is not assigned.");
+            enabled = false;
+            return;
+        }
+
+        if (wandTip == null)
+        {
+            Debug.LogError("[VoiceSpellCastingSystem] Wand Tip is not assigned.");
+            enabled = false;
+            return;
+        }
+
+        if (drawingSurface == null)
+        {
+            Debug.LogError("[VoiceSpellCastingSystem] Drawing Surface is not assigned.");
+            enabled = false;
+            return;
+        }
+
+        if (ignisAoEPrefab == null)
+        {
+            Debug.LogError("[VoiceSpellCastingSystem] Ignis AoE Prefab is not assigned.");
+            enabled = false;
+            return;
+        }
+
+        StartVoiceRecognizer();
+    }
+
+    private void Update()
+    {
+        ProcessQueuedVoiceCommand();
+
+        if (!awaitingGesture)
+            return;
+
+        if (Time.time > awaitingUntil)
+        {
+            Debug.Log("[VoiceSpellCastingSystem] Gesture timeout. Cancelling pending spell.");
+            CancelPendingSpell();
+            return;
+        }
+
+        EnsureRightHandDevice();
+
+        bool triggerPressed = false;
+        if (rightHandDevice.isValid)
+            rightHandDevice.TryGetFeatureValue(CommonUsages.triggerButton, out triggerPressed);
+
+        if (triggerPressed && !previousTriggerPressed)
+        {
+            drawingSurface.BeginStroke();
+            Debug.Log("[VoiceSpellCastingSystem] Drawing started.");
+        }
+
+        if (triggerPressed)
+        {
+            drawingSurface.TryAddPointFromRay(wandTip.position, wandTip.forward);
+        }
+
+        if (!triggerPressed && previousTriggerPressed)
+        {
+            FinishGesture();
+        }
+
+        previousTriggerPressed = triggerPressed;
+    }
+
+    private void RegisterTemplates()
+    {
+
+        recognizer.AddTemplate("IGNIS", new List<Vector2>
+        {
+            new Vector2(0.0f, 1.0f),
+            new Vector2(-0.8f, -1.0f),
+            new Vector2(0.8f, -1.0f),
+            new Vector2(0.0f, 1.0f)
+        });
+
+
+        recognizer.AddTemplate("REGEN", new List<Vector2>
+    {
+        new Vector2(0.0f, 1.0f),
+        new Vector2(0.7f, 0.7f),
+        new Vector2(1.0f, 0.0f),
+        new Vector2(0.7f, -0.7f),
+        new Vector2(0.0f, -1.0f),
+        new Vector2(-0.7f, -0.7f),
+        new Vector2(-1.0f, 0.0f),
+        new Vector2(-0.7f, 0.7f),
+        new Vector2(0.0f, 1.0f)
+    });
+
+
+        recognizer.AddTemplate("REGEN", new List<Vector2>
+        {
+            new Vector2(-0.9f, 1.0f),
+            new Vector2(-0.9f, 0.5f),
+            new Vector2(-0.8f, 0.0f),
+            new Vector2(-0.6f, -0.6f),
+            new Vector2(-0.25f, -0.95f),
+            new Vector2(0.0f, -1.0f),
+            new Vector2(0.25f, -0.95f),
+            new Vector2(0.6f, -0.6f),
+            new Vector2(0.8f, 0.0f),
+            new Vector2(0.9f, 0.5f),
+            new Vector2(0.9f, 1.0f)
+        }); 
+
+
+        recognizer.AddTemplate("SLASH", new List<Vector2>
+    {
+        new Vector2(-1.0f, -1.0f),
+        new Vector2(-0.5f, -0.5f),
+        new Vector2(0.0f, 0.0f),
+        new Vector2(0.5f, 0.5f),
+        new Vector2(1.0f, 1.0f)
+    });
+
+
+        recognizer.AddTemplate("SHIELD", new List<Vector2>
+    {
+        new Vector2(-1.0f, -0.5f),
+        new Vector2(-0.8f, 0.0f),
+        new Vector2(-0.5f, 0.4f),
+        new Vector2(0.0f, 0.7f),
+        new Vector2(0.5f, 0.4f),
+        new Vector2(0.8f, 0.0f),
+        new Vector2(1.0f, -0.5f)
+    });
+
+
+        recognizer.AddTemplate("FREEZE", new List<Vector2>
+        {
+            new Vector2(-1.0f, 0.8f),
+            new Vector2(-0.55f, 0.0f),
+            new Vector2(-0.1f, 0.75f),
+            new Vector2(0.35f, -0.1f),
+            new Vector2(0.75f, 0.65f),
+            new Vector2(1.0f, 0.15f)
+        });
+
+
+        recognizer.AddTemplate("PORTAL", new List<Vector2>
+        {
+            new Vector2(0.8f, 1.0f),
+            new Vector2(0.2f, 1.0f),
+            new Vector2(-0.4f, 1.0f),
+            new Vector2(-0.8f, 1.0f),
+
+            new Vector2(-0.8f, 0.4f),
+            new Vector2(-0.8f, -0.2f),
+            new Vector2(-0.8f, -0.8f),
+
+            new Vector2(-0.4f, -0.8f),
+            new Vector2(0.2f, -0.8f),
+            new Vector2(0.8f, -0.8f)
+        });
+    }
+
+    private void StartVoiceRecognizer()
+    {
+        try
+        {
+            keywordRecognizer = new KeywordRecognizer(
+                new[]
+                {
+                    ignisKeyword,
+                    regenKeyword,
+                    freezeKeyword,
+                    slashKeyword,
+                    shieldKeyword,
+                    portalKeyword
+                },
+                minimumConfidence
+            );
+
+            keywordRecognizer.OnPhraseRecognized += OnPhraseRecognized;
+            keywordRecognizer.Start();
+
+            Debug.Log($"[VoiceSpellCastingSystem] Voice recognizer started. Say '{ignisKeyword}'.");
+        }
+        catch (Exception e)
+        {
+            Debug.LogError("[VoiceSpellCastingSystem] Failed to start voice recognizer: " + e.Message);
+            enabled = false;
+        }
+    }
+
+    private void OnPhraseRecognized(PhraseRecognizedEventArgs args)
+    {
+        queuedVoiceKeyword = args.text.ToUpperInvariant();
+        hasQueuedVoiceKeyword = true;
+    }
+
+    private void ProcessQueuedVoiceCommand()
+    {
+        if (!hasQueuedVoiceKeyword)
+            return;
+
+        string keyword = queuedVoiceKeyword;
+        hasQueuedVoiceKeyword = false;
+        queuedVoiceKeyword = null;
+
+        Debug.Log($"[VoiceSpellCastingSystem] Voice recognized: {keyword}");
+
+        string spellToPrepare = null;
+
+        if (keyword == ignisKeyword.ToUpperInvariant()) spellToPrepare = "IGNIS";
+        else if (keyword == regenKeyword.ToUpperInvariant()) spellToPrepare = "REGEN";
+        else if (keyword == freezeKeyword.ToUpperInvariant()) spellToPrepare = "FREEZE";
+        else if (keyword == slashKeyword.ToUpperInvariant()) spellToPrepare = "SLASH";
+        else if (keyword == shieldKeyword.ToUpperInvariant()) spellToPrepare = "SHIELD";
+        else if (keyword == portalKeyword.ToUpperInvariant()) spellToPrepare = "PORTAL";
+
+        if (string.IsNullOrEmpty(spellToPrepare))
+            return;
+
+        if (spellToPrepare != "SHIELD")
+        {
+            if (!TryLockCurrentTarget())
+                return;
+        }
+
+        pendingSpell = spellToPrepare;
+        awaitingGesture = true;
+        awaitingUntil = Time.time + gestureTimeout;
+        previousTriggerPressed = false;
+
+        drawingSurface.ShowForCamera(xrCamera);
+
+        Debug.Log($"[VoiceSpellCastingSystem] Waiting for {pendingSpell} gesture.");
+    }
+    private bool TryLockCurrentTarget()
+    {
+        if (Physics.Raycast(
+            wandTip.position,
+            wandTip.forward,
+            out RaycastHit hit,
+            maxCastDistance,
+            castLayers,
+            QueryTriggerInteraction.Ignore))
+        {
+            hasLockedTarget = true;
+            lockedTargetPosition = hit.point;
+            lockedTargetNormal = hit.normal;
+
+            Debug.Log($"[VoiceSpellCastingSystem] Target locked at {hit.point} on {hit.collider.name}");
+            return true;
+        }
+
+        hasLockedTarget = false;
+        Debug.LogWarning("[VoiceSpellCastingSystem] No valid target found. Aim at the floor before saying IGNIS.");
+        return false;
+    }
+    private float GetThresholdForSpell(string spellName)
+    {
+        switch (spellName)
+        {
+            case "IGNIS": return ignisThreshold;
+            case "REGEN": return regenThreshold;
+            case "FREEZE": return freezeThreshold;
+            case "SLASH": return slashThreshold;
+            case "SHIELD": return shieldThreshold;
+            case "PORTAL": return portalThreshold;
+            default: return 0.50f;
+        }
+    }
+    private float GetStrokePathLength(List<Vector2> points)
+    {
+        float length = 0f;
+
+        for (int i = 1; i < points.Count; i++)
+            length += Vector2.Distance(points[i - 1], points[i]);
+
+        return length;
+    }
+
+    private float GetStartEndDistance(List<Vector2> points)
+    {
+        if (points == null || points.Count < 2)
+            return 999f;
+
+        return Vector2.Distance(points[0], points[points.Count - 1]);
+    }
+
+    private bool IsClosedShape(List<Vector2> points, float maxClosingDistance = 0.45f)
+    {
+        return GetStartEndDistance(points) <= maxClosingDistance;
+    }
+
+    private float GetPathStraightnessRatio(List<Vector2> points)
+    {
+        if (points == null || points.Count < 2)
+            return 1f;
+
+        float pathLength = GetStrokePathLength(points);
+        float directDistance = Vector2.Distance(points[0], points[points.Count - 1]);
+
+        if (directDistance < 0.0001f)
+            return 999f;
+
+        return pathLength / directDistance;
+    }
+    private void GetStrokeBounds(List<Vector2> points, out float width, out float height)
+    {
+        width = 0f;
+        height = 0f;
+
+        if (points == null || points.Count == 0)
+            return;
+
+        float minX = float.MaxValue;
+        float maxX = float.MinValue;
+        float minY = float.MaxValue;
+        float maxY = float.MinValue;
+
+        foreach (Vector2 p in points)
+        {
+            if (p.x < minX) minX = p.x;
+            if (p.x > maxX) maxX = p.x;
+            if (p.y < minY) minY = p.y;
+            if (p.y > maxY) maxY = p.y;
+        }
+
+        width = maxX - minX;
+        height = maxY - minY;
+    }
+    private float GetMaxTurnAngleDegrees(List<Vector2> points)
+    {
+        if (points == null || points.Count < 3)
+            return 180f;
+
+        float maxAngle = 0f;
+
+        for (int i = 1; i < points.Count - 1; i++)
+        {
+            Vector2 a = (points[i] - points[i - 1]).normalized;
+            Vector2 b = (points[i + 1] - points[i]).normalized;
+
+            if (a.sqrMagnitude < 0.0001f || b.sqrMagnitude < 0.0001f)
+                continue;
+
+            float dot = Mathf.Clamp(Vector2.Dot(a, b), -1f, 1f);
+            float angle = Mathf.Acos(dot) * Mathf.Rad2Deg;
+
+            if (angle > maxAngle)
+                maxAngle = angle;
+        }
+
+        return maxAngle;
+    }
+    private float GetMiddlePointY(List<Vector2> points)
+    {
+        if (points == null || points.Count == 0)
+            return 0f;
+
+        int middleIndex = points.Count / 2;
+        return points[middleIndex].y;
+    }
+    private bool PassesSpellShapeRules(string spellName, List<Vector2> stroke)
+    {
+        if (stroke == null || stroke.Count < 2)
+            return false;
+
+        bool closedEnough = IsClosedShape(stroke, 0.45f);
+        float straightness = GetPathStraightnessRatio(stroke);
+
+        GetStrokeBounds(stroke, out float width, out float height);
+
+        if (spellName == "IGNIS")
+        {
+            Debug.Log($"[VoiceSpellCastingSystem] IGNIS shape check | Closed: {closedEnough} | Straightness: {straightness:0.000}");
+            return closedEnough && straightness > 2.0f;
+        }
+
+        if (spellName == "SLASH")
+        {
+            Debug.Log($"[VoiceSpellCastingSystem] SLASH shape check | Closed: {closedEnough} | Straightness: {straightness:0.000} | Width: {width:0.000} | Height: {height:0.000}");
+
+            // Slash should be open, almost straight, and diagonal enough
+            bool diagonalEnough = width > 0.35f && height > 0.35f;
+            return !closedEnough && straightness < 1.15f && diagonalEnough;
+        }
+
+        if (spellName == "SHIELD")
+        {
+            float middleY = GetMiddlePointY(stroke);
+            float averageEndY = (stroke[0].y + stroke[stroke.Count - 1].y) * 0.5f;
+
+            Debug.Log($"[VoiceSpellCastingSystem] SHIELD shape check | Closed: {closedEnough} | Straightness: {straightness:0.000} | Width: {width:0.000} | Height: {height:0.000} | MiddleY: {middleY:0.000} | EndAvgY: {averageEndY:0.000}");
+
+            bool wideEnough = width > 0.5f;
+            bool notTooTall = height < width;
+            bool curvedEnough = straightness > 1.2f;
+            bool openShape = !closedEnough;
+
+            // Arc shape: middle should be higher than ends
+            bool middleIsHigher = middleY > averageEndY + 0.15f;
+
+            return openShape && curvedEnough && wideEnough && notTooTall && middleIsHigher;
+        }
+
+        if (spellName == "FREEZE")
+        {
+            Debug.Log($"[VoiceSpellCastingSystem] FREEZE shape check | Closed: {closedEnough} | Straightness: {straightness:0.000} | Width: {width:0.000} | Height: {height:0.000}");
+
+            // Freeze should be open, angular, not too straight, and wider than tiny scribbles
+            bool wideEnough = width > 0.45f;
+            bool tallEnough = height > 0.35f;
+            bool notLineLike = straightness > 1.25f;
+            bool openShape = !closedEnough;
+
+            return openShape && wideEnough && tallEnough && notLineLike;
+        }
+        if (spellName == "PORTAL")
+        {
+            Debug.Log($"[VoiceSpellCastingSystem] PORTAL shape check | Closed: {closedEnough} | Straightness: {straightness:0.000} | Width: {width:0.000} | Height: {height:0.000}");
+
+            bool openShape = !closedEnough;
+            bool tallEnough = height > 0.6f;
+            bool wideEnough = width > 0.25f;
+            bool notLineLike = straightness > 1.4f;
+
+            return openShape && tallEnough && wideEnough && notLineLike;
+        }
+
+        if (spellName == "REGEN")
+        {
+            float middleY = GetMiddlePointY(stroke);
+            float averageEndY = (stroke[0].y + stroke[stroke.Count - 1].y) * 0.5f;
+
+            Debug.Log($"[VoiceSpellCastingSystem] REGEN shape check | Closed: {closedEnough} | Straightness: {straightness:0.000} | Width: {width:0.000} | Height: {height:0.000} | MiddleY: {middleY:0.000} | EndAvgY: {averageEndY:0.000}");
+
+            bool openShape = !closedEnough;
+            bool tallEnough = height > 0.5f;
+            bool wideEnough = width > 0.35f;
+            bool curvedEnough = straightness > 1.15f;
+
+            // U shape: middle should be lower than ends
+            bool middleIsLower = middleY < averageEndY - 0.15f;
+
+            return openShape && tallEnough && wideEnough && curvedEnough && middleIsLower;
+        }
+        return true;
+    }
+    private void FinishGesture()
+    {
+        List<Vector2> stroke = drawingSurface.GetStrokePoints2D();
+
+        Debug.Log($"[VoiceSpellCastingSystem] Points collected: {stroke.Count}");
+
+        if (stroke.Count < minimumPointsRequired)
+        {
+            Debug.LogWarning("[VoiceSpellCastingSystem] Not enough points. Gesture rejected.");
+            CancelPendingSpell();
+            return;
+        }
+
+        DollarOneRecognizer.Result result = recognizer.RecognizeOnly(pendingSpell, stroke);
+
+        float requiredThreshold = GetThresholdForSpell(pendingSpell);
+        bool passesShapeRules = PassesSpellShapeRules(pendingSpell, stroke);
+
+        Debug.Log($"[VoiceSpellCastingSystem] Expected: {pendingSpell} | Score: {result.Score:0.000} | Threshold: {requiredThreshold:0.000} | ShapeRules: {passesShapeRules}");
+
+        bool accepted =
+            result.Success &&
+            result.Score >= requiredThreshold &&
+            passesShapeRules;
+
+        if (accepted)
+        {
+            Debug.Log("[VoiceSpellCastingSystem] Gesture accepted.");
+            CastPendingSpell();
+        }
+        else
+        {
+            Debug.LogWarning("[VoiceSpellCastingSystem] Gesture rejected.");
+        }
+
+        CancelPendingSpell();
+    }
+
+    private void CastPendingSpell()
+    {
+        GameObject prefabToCast = GetPrefabForSpell(pendingSpell);
+
+        if (prefabToCast == null)
+        {
+            Debug.LogWarning($"[VoiceSpellCastingSystem] Spell '{pendingSpell}' recognized correctly, but no prefab is assigned yet.");
+            return;
+        }
+
+        if (pendingSpell == "SHIELD")
+        {
+            CastShield(prefabToCast);
+            return;
+        }
+
+        if (!hasLockedTarget)
+        {
+            Debug.LogWarning("[VoiceSpellCastingSystem] Cast failed. No locked target.");
+            return;
+        }
+
+        Vector3 spawnPosition = lockedTargetPosition + lockedTargetNormal * castSurfaceOffset;
+        Quaternion spawnRotation = Quaternion.FromToRotation(Vector3.up, lockedTargetNormal);
+
+        Instantiate(prefabToCast, spawnPosition, spawnRotation);
+
+        Debug.Log($"[VoiceSpellCastingSystem] {pendingSpell} cast at locked target {lockedTargetPosition}.");
+    }
+    private void CastShield(GameObject shieldPrefab)
+{
+    if (playerShieldAnchor == null)
+    {
+        Debug.LogWarning("[VoiceSpellCastingSystem] Shield cast failed. Player Shield Anchor is not assigned.");
+        return;
+    }
+
+    GameObject shieldInstance = Instantiate(
+        shieldPrefab,
+        playerShieldAnchor.position,
+        playerShieldAnchor.rotation,
+        playerShieldAnchor
+    );
+
+    shieldInstance.transform.localPosition = Vector3.zero;
+    shieldInstance.transform.localRotation = Quaternion.identity;
+
+    Debug.Log("[VoiceSpellCastingSystem] SHIELD cast on player.");
+}
+
+    private GameObject GetPrefabForSpell(string spellName)
+    {
+        switch (spellName)
+        {
+            case "IGNIS": return ignisAoEPrefab;
+            case "REGEN": return regenAoEPrefab;
+            case "FREEZE": return freezeAoEPrefab;
+            case "SLASH": return slashAoEPrefab;
+            case "SHIELD": return shieldPrefab;
+            case "PORTAL": return portalPrefab;
+            default: return null;
+        }
+    }
+
+    private void CancelPendingSpell()
+    {
+        awaitingGesture = false;
+        pendingSpell = null;
+        previousTriggerPressed = false;
+
+        hasLockedTarget = false;
+        lockedTargetPosition = Vector3.zero;
+        lockedTargetNormal = Vector3.up;
+
+        drawingSurface.HideSurface();
+    }
+
+    private void EnsureRightHandDevice()
+    {
+        if (rightHandDevice.isValid)
+            return;
+
+        List<InputDevice> devices = new List<InputDevice>();
+        InputDevices.GetDevicesAtXRNode(XRNode.RightHand, devices);
+
+        if (devices.Count > 0)
+            rightHandDevice = devices[0];
+    }
+
+    private void OnDestroy()
+    {
+        if (keywordRecognizer != null)
+        {
+            keywordRecognizer.OnPhraseRecognized -= OnPhraseRecognized;
+
+            if (keywordRecognizer.IsRunning)
+                keywordRecognizer.Stop();
+
+            keywordRecognizer.Dispose();
+        }
+    }
+}
